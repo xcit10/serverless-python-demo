@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  serverless-python-demo
+
+  Sample SAM Template for serverless-python-demo
+
+Globals:
+  Api:
+    TracingEnabled: true
+    EndpointConfiguration:
+      Type: REGIONAL
+  Function:
+    Timeout: 5
+    Runtime: python3.9
+    MemorySize: 256
+    Tracing: Active
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        TABLE: !Ref Table
+        LOG_LEVEL: INFO
+        POWERTOOLS_LOGGER_SAMPLE_RATE: 0.1
+        POWERTOOLS_LOGGER_LOG_EVENT: true
+        POWERTOOLS_METRICS_NAMESPACE: ServerlessPythonDemo
+        POWERTOOLS_SERVICE_NAME: api-service
+
+Resources:
+  GetProductsApiFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: src/
+      Handler: api_handler.get_products.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref Table
+      Events:
+        GetProducts:
+          Type: Api 
+          Properties:
+            Path: /products
+            Method: GET
+
+  GetProductApiFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: src/
+      Handler: api_handler.get_product.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref Table
+      Events:
+        GetProducts:
+          Type: Api 
+          Properties:
+            Path: /products/{id}
+            Method: GET
+
+  PutProductApiFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: src/
+      Handler: api_handler.put_product.lambda_handler
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref Table
+      Events:
+        PutProduct:
+          Type: Api 
+          Properties:
+            Path: /products/{id}
+            Method: PUT
+
+  DeleteProductApiFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: src/
+      Handler: api_handler.delete_product.lambda_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Events:
+        DeleteProduct:
+          Type: Api 
+          Properties:
+            Path: /products/{id}
+            Method: DELETE
+  
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+Outputs:
+  ServerlessDemoApi:
+    Description: "API Gateway endpoint URL for Prod stage for Serverless Demo functions"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
