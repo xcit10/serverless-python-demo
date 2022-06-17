@@ -30,11 +30,13 @@ Resources:
   GetProductsApiFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: src/
-      Handler: api_handler.get_products.lambda_handler
+      CodeUri: ./src/get_products
+      Handler: app.lambda_handler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref Table
+      Layers:
+        - !Ref PyUtils
       Events:
         GetProducts:
           Type: Api 
@@ -45,11 +47,13 @@ Resources:
   GetProductApiFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: src/
-      Handler: api_handler.get_product.lambda_handler
+      CodeUri: ./src/get_product
+      Handler: app.lambda_handler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref Table
+      Layers:
+        - !Ref PyUtils
       Events:
         GetProducts:
           Type: Api 
@@ -60,11 +64,13 @@ Resources:
   PutProductApiFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: src/
-      Handler: api_handler.put_product.lambda_handler
+      CodeUri: ./src/put_product
+      Handler: app.lambda_handler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref Table
+      Layers:
+        - !Ref PyUtils
       Events:
         PutProduct:
           Type: Api 
@@ -75,17 +81,30 @@ Resources:
   DeleteProductApiFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: src/
-      Handler: api_handler.delete_product.lambda_handler
+      CodeUri: ./src/delete_product
+      Handler: app.lambda_handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref Table
+      Layers:
+        - !Ref PyUtils
       Events:
         DeleteProduct:
           Type: Api 
           Properties:
             Path: /products/{id}
             Method: DELETE
+  PyUtils:
+        Type: AWS::Serverless::LayerVersion
+        Properties:
+            LayerName: data-store-layer
+            Description: Dependencies for lambda functions [sam-with-layers]
+            ContentUri: src/pyutils
+            CompatibleRuntimes:
+              - python3.9
+            RetentionPolicy: Delete
+        Metadata:
+          BuildMethod: python3.9
   
   Table:
     Type: AWS::DynamoDB::Table

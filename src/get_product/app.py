@@ -3,7 +3,7 @@
 import os
 import json
 
-from .store.data_store import ProductStore
+from utils import ProductStore
 
 
 product_store = ProductStore(os.getenv("TABLE"))
