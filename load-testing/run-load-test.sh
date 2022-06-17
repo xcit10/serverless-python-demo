@@ -4,7 +4,7 @@
 STACK_NAME=serverless-python-demo
 
 API_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME \
-  --query 'Stacks[0].Outputs[?OutputKey==`ApiURL`].OutputValue' \
+  --query 'Stacks[0].Outputs[?OutputKey==`ServerlessDemoApi`].OutputValue' \
   --output text)
 
 echo $API_URL
