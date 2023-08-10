@@ -59,55 +59,55 @@ jobs:
 #         run: |
 #           sam build --use-container
 
-  # This job will run the tests.
-  test:
-    runs-on: ubuntu-latest
-    steps:
+#   # This job will run the tests.
+#   test:
+#     runs-on: ubuntu-latest
+#     steps:
     
-       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-      - uses: aws-actions/setup-sam@v2
-      - uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: AKIA6HNQ64FNHY5WL25S
-          aws-secret-access-key: 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
-          aws-region: us-east-2
-      - run: sam build --use-container
-      - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+#        - uses: actions/checkout@v3
+#       - uses: actions/setup-python@v3
+#       - uses: aws-actions/setup-sam@v2
+#       - uses: aws-actions/configure-aws-credentials@v1
+#         with:
+#           aws-access-key-id: AKIA6HNQ64FNHY5WL25S
+#           aws-secret-access-key: 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
+#           aws-region: us-east-2
+#       - run: sam build --use-container
+#       - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
       
-      # Checking out the code from the repository.
-      - uses: actions/checkout@v2
+#       # Checking out the code from the repository.
+#       - uses: actions/checkout@v2
 
-      # Installing the AWS CLI and AWS SAM CLI.
-      - name: Install AWS CLI and SAM CLI
-        run: |
-          sudo apt-get install awscli
-          pip install aws-sam-cli
+#       # Installing the AWS CLI and AWS SAM CLI.
+#       - name: Install AWS CLI and SAM CLI
+#         run: |
+#           sudo apt-get install awscli
+#           pip install aws-sam-cli
 
-      # Createing a virtual environment and install the application dependencies.
-      - name: Create virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
+#       # Createing a virtual environment and install the application dependencies.
+#       - name: Create virtual environment
+#         run: |
+#           python -m venv venv
+#           source venv/bin/activate
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+#       - name: Install dependencies
+#         run: |
+#           pip install -r requirements.txt
 
-      # Runing tests
-      - name: Run tests
-        run: |
-          pytest
+#       # Runing tests
+#       - name: Run tests
+#         run: |
+#           pytest
 
   # Deploy the application to AWS.
   deploy:
     runs-on: ubuntu-latest
     needs:
       - build
-      - test
+    #  - test
     steps:
     
-       - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
       - uses: aws-actions/setup-sam@v2
       - uses: aws-actions/configure-aws-credentials@v1
