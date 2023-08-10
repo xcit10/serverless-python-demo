@@ -35,7 +35,7 @@ jobs:
       - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
       
       # Check out the code from the repository.
-      - uses: actions/checkout@v2
+#       - uses: actions/checkout@v2
 
 #       # Install the AWS CLI and AWS SAM CLI.
 #       - name: Install AWS CLI and SAM CLI
