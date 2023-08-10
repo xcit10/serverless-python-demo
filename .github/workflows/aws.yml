@@ -9,13 +9,13 @@ on:
   push:
     branches:
       - main
-      - staging
+    #  - staging
 
   # Trigger the workflow whenever a new merge request is made to the repository
   pull_request:
     branches:
       - main
-      - staging
+     # - staging
 
 jobs:
   # Build the application.
