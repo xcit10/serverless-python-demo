@@ -31,6 +31,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_SECRET_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+          
+    # Createing a virtual environment and install the application dependencies.
+      - name: Create virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          
       - run: sam build --use-container -t template.yamel
       - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
       
@@ -83,12 +90,6 @@ jobs:
 #         run: |
 #           sudo apt-get install awscli
 #           pip install aws-sam-cli
-
-#       # Createing a virtual environment and install the application dependencies.
-#       - name: Create virtual environment
-#         run: |
-#           python -m venv venv
-#           source venv/bin/activate
 
 #       - name: Install dependencies
 #         run: |
