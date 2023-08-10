@@ -22,6 +22,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - uses: aws-actions/setup-sam@v2
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: AKIA6HNQ64FNHY5WL25S
+          aws-secret-access-key: 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
+          aws-region: us-east-2
+      - run: sam build --use-container
+      - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+      
       # Check out the code from the repository.
       - uses: actions/checkout@v2
 
