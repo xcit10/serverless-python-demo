@@ -45,7 +45,88 @@ resource "aws_lambda_function" "get_products" {
   layers = [aws_lambda_layer_version.py_utils.arn]
 }
 
-# Repeat the above block for other Lambda functions (GetProduct, PutProduct, DeleteProduct)
+resource "aws_lambda_function" "get_products" {
+  filename         = "src/get_products/app.py"
+  function_name    = "get-products-api"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.9"
+
+  environment {
+    variables = {
+      TABLE                     = aws_dynamodb_table.table.name
+      LOG_LEVEL                 = "INFO"
+      POWERTOOLS_LOGGER_SAMPLE_RATE = "0.1"
+      POWERTOOLS_LOGGER_LOG_EVENT   = "true"
+      POWERTOOLS_METRICS_NAMESPACE  = "ServerlessPythonDemo"
+      POWERTOOLS_SERVICE_NAME      = "api-service"
+    }
+  }
+
+  layers = [aws_lambda_layer_version.py_utils.arn]
+}
+
+resource "aws_lambda_function" "delete_product" {
+  filename         = "src/delete_product/app.py"
+  function_name    = "delete_product-api"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.9"
+
+  environment {
+    variables = {
+      TABLE                     = aws_dynamodb_table.table.name
+      LOG_LEVEL                 = "INFO"
+      POWERTOOLS_LOGGER_SAMPLE_RATE = "0.1"
+      POWERTOOLS_LOGGER_LOG_EVENT   = "true"
+      POWERTOOLS_METRICS_NAMESPACE  = "ServerlessPythonDemo"
+      POWERTOOLS_SERVICE_NAME      = "api-service"
+    }
+  }
+
+  layers = [aws_lambda_layer_version.py_utils.arn]
+}
+resource "aws_lambda_function" "get_product" {
+  filename         = "src/get_product/app.py"
+  function_name    = "get-products-api"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.9"
+
+  environment {
+    variables = {
+      TABLE                     = aws_dynamodb_table.table.name
+      LOG_LEVEL                 = "INFO"
+      POWERTOOLS_LOGGER_SAMPLE_RATE = "0.1"
+      POWERTOOLS_LOGGER_LOG_EVENT   = "true"
+      POWERTOOLS_METRICS_NAMESPACE  = "ServerlessPythonDemo"
+      POWERTOOLS_SERVICE_NAME      = "api-service"
+    }
+  }
+
+  layers = [aws_lambda_layer_version.py_utils.arn]
+}
+
+resource "aws_lambda_function" "pyutils" {
+  filename         = "src/get_products/utils.py"
+  function_name    = "get-pyutils-api"
+  role             = aws_iam_role.lambda_execution.arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.9"
+
+  environment {
+    variables = {
+      TABLE                     = aws_dynamodb_table.table.name
+      LOG_LEVEL                 = "INFO"
+      POWERTOOLS_LOGGER_SAMPLE_RATE = "0.1"
+      POWERTOOLS_LOGGER_LOG_EVENT   = "true"
+      POWERTOOLS_METRICS_NAMESPACE  = "ServerlessPythonDemo"
+      POWERTOOLS_SERVICE_NAME      = "api-service"
+    }
+  }
+
+  layers = [aws_lambda_layer_version.py_utils.arn]
+}
 
 resource "aws_iam_role" "lambda_execution" {
   name = "lambda_execution_role"
