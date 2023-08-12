@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 resource "aws_dynamodb_table" "table" {
-  name           = "your-table-name"
+  name           = "avishay's-table-dynamodb"
   billing_mode   = "PAY_PER_REQUEST"
 
   attribute {
@@ -19,13 +19,13 @@ resource "aws_dynamodb_table" "table" {
 }
 
 resource "aws_lambda_layer_version" "py_utils" {
-  filename         = "src/pyutils.zip"
+  filename         = "src/pyutils/utils.py"
   layer_name       = "data-store-layer"
   compatible_runtimes = ["python3.9"]
 }
 
 resource "aws_lambda_function" "get_products" {
-  filename         = "src/get_products.zip"
+  filename         = "src/get_products/app.py"
   function_name    = "get-products-api"
   role             = aws_iam_role.lambda_execution.arn
   handler          = "app.lambda_handler"
