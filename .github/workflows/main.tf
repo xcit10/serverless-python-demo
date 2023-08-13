@@ -1,182 +1,115 @@
+# Main tf for serverless app
+
+# AWS account on us-east-1
 provider "aws" {
-  region = "us-east-1"  # Change this to your desired region
+    profile = "Avishay-WideOps"
+    region = "us-east-1"
 }
 
-resource "aws_dynamodb_table" "table" {
-  name           = "avishay's-table-dynamodb"
-  billing_mode   = "PAY_PER_REQUEST"
-
-  attribute {
-    name = "id"
-    type = "S"
-  }
-
-  key_schema {
-    attribute_name = "id"
-    key_type       = "HASH"
+#aws ec2 describe-instances
+terraform {
+  backend "s3" {
+    bucket = "terraform-back-tfstate"
+    key = "tfstate-demo-app"
+    region = "us-east-1"
   }
 }
 
-resource "aws_lambda_layer_version" "py_utils" {
-  filename         = "src/pyutils.zip"
-  layer_name       = "data-store-layer"
-  compatible_runtimes = ["python3.9"]
-}
+# dynamodb following https://registry.terraform.io/modules/terraform-aws-modules/dynamodb-table/aws/latest
+module "dynamodb_table" {
+  source   = "terraform-aws-modules/dynamodb-table/aws"
 
-resource "aws_iam_role" "lambda_execution" {
-  name = "lambda_execution_role"
+  name     = "avishay-table"
+  hash_key = "id"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
-  })
-}
-
-# Lambda functions
-locals {
-  function_config = [
+  attributes = [
     {
-      name        = "get_products"
-      description = "Get products Lambda function"
-      handler     = "get_products.app.lambda_handler"
-      src_path    = "src/get_products"
-      policies    = ["DynamoDBReadPolicy"]
-      method      = "GET"
-      path        = "/products"
-    },
-    {
-      name        = "get_product"
-      description = "Get product Lambda function"
-      handler     = "get_product.app.lambda_handler"
-      src_path    = "src/get_product"
-      policies    = ["DynamoDBReadPolicy"]
-      method      = "GET"
-      path        = "/products/{id}"
-    },
-    {
-      name        = "put_product"
-      description = "Put product Lambda function"
-      handler     = "put_product.app.lambda_handler"
-      src_path    = "src/put_product"
-      policies    = ["DynamoDBWritePolicy"]
-      method      = "PUT"
-      path        = "/products/{id}"
-    },
-    {
-      name        = "delete_product"
-      description = "Delete product Lambda function"
-      handler     = "delete_product.app.lambda_handler"
-      src_path    = "src/delete_product"
-      policies    = ["DynamoDBCrudPolicy"]
-      method      = "DELETE"
-      path        = "/products/{id}"
-    },
+      name = "id"
+      type = "N"
+    }
   ]
+
+  tags = {
+    Terraform   = "true"
+    Environment = "staging"
+  }
 }
 
-resource "aws_lambda_function" "functions" {
-  count      = length(local.function_config)
-  function_name = local.function_config[count.index].name
-  role             = aws_iam_role.lambda_execution.arn
-  handler          = local.function_config[count.index].handler
-  runtime          = "python3.9"
-  description      = local.function_config[count.index].description
+# Lambda from https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_function.html#example-usage
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect = "Allow"
 
-  code {
-    filename = "${local.function_config[count.index].src_path}.zip"
-  }
-
-  environment {
-    variables = {
-      TABLE                     = aws_dynamodb_table.table.name
-      LOG_LEVEL                 = "INFO"
-      POWERTOOLS_LOGGER_SAMPLE_RATE = "0.1"
-      POWERTOOLS_LOGGER_LOG_EVENT   = "true"
-      POWERTOOLS_METRICS_NAMESPACE  = "ServerlessPythonDemo"
-      POWERTOOLS_SERVICE_NAME      = "api-service"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
     }
-  }
 
-  layers = [aws_lambda_layer_version.py_utils.arn]
-
-  # Attach policies based on function_config
-  policy = data.aws_iam_policy_document.function_policies[count.index].json
-}
-
-data "aws_iam_policy_document" "function_policies" {
-  count = length(local.function_config)
-
-  dynamic "statement" {
-    for_each = local.function_config[count.index].policies
-
-    content {
-      actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
-      resources = [aws_dynamodb_table.table.arn]
-
-      # Add more actions as needed
-    }
+    actions = ["sts:AssumeRole"]
   }
 }
 
-resource "aws_lambda_permission" "api_gateway_permissions" {
-  count         = length(local.function_config)
-  statement_id  = "AllowAPIGatewayInvoke-${local.function_config[count.index].name}"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.functions[count.index].function_name
-  principal     = "apigateway.amazonaws.com"
+resource "aws_iam_role" "iam_role_product" {
+  name               = "iam_for_lambda123"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-resource "aws_api_gateway_rest_api" "api" {
-  name        = "serverless-python-demo"
-  description = "Serverless Python Demo API"
+# Lambda Function - delete_product
+data "archive_file" "delete_product" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/delete_product"
+  output_path = "${path.module}/myzip/delete_product.zip"
+}
+resource "aws_lambda_function" "delete_product" {
+  filename                       = "${path.module}/myzip/delete_product.zip"
+  function_name                  = "delete_product"
+  role                           = aws_iam_role.iam_role_product.arn
+  handler                        = "app.lambda_handler"
+  runtime                        = "python3.9"
+ # depends_on                     = [aws_iam_role_policy_attachment.policy_attach]
 }
 
-resource "aws_api_gateway_resource" "products" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "products"
+# Lambda Function - get_products
+data "archive_file" "get_products" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/get_products"
+  output_path = "${path.module}/myzip/get_products.zip"
+}
+resource "aws_lambda_function" "get_products" {
+  filename                       = "${path.module}/myzip/get_products.zip"
+  function_name                  = "get_products"
+  role                           = aws_iam_role.iam_role_product.arn
+  handler                        = "app.lambda_handler"
+  runtime                        = "python3.9"
+ # depends_on                     = [aws_iam_role_policy_attachment.policy_attach]
 }
 
-resource "aws_api_gateway_method" "methods" {
-  count         = length(local.function_config)
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.products.id
-  http_method   = local.function_config[count.index].method
-  authorization = "NONE"
+# Lambda Function - get_product
+data "archive_file" "get_product" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/get_product"
+  output_path = "${path.module}/myzip/get_product.zip"
+}
+resource "aws_lambda_function" "get_product" {
+  filename                       = "${path.module}/myzip/get_product.zip"
+  function_name                  = "get_product"
+  role                           = aws_iam_role.iam_role_product.arn
+  handler                        = "app.lambda_handler"
+  runtime                        = "python3.9"
+ # depends_on                     = [aws_iam_role_policy_attachment.policy_attach]
 }
 
-resource "aws_api_gateway_integration" "integrations" {
-  count           = length(local.function_config)
-  rest_api_id     = aws_api_gateway_rest_api.api.id
-  resource_id     = aws_api_gateway_resource.products.id
-  http_method     = aws_api_gateway_method.methods[count.index].http_method
-  integration_http_method = "POST"
-  type            = "AWS_PROXY"
-  uri             = aws_lambda_function.functions[count.index].invoke_arn
+# Lambda Function - put_product
+data "archive_file" "put_product" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/put_product"
+  output_path = "${path.module}/myzip/put_product.zip"
 }
-
-resource "aws_api_gateway_method_response" "method_responses" {
-  count       = length(local.function_config)
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.products.id
-  http_method = aws_api_gateway_method.methods[count.index].http_method
-  status_code = "200"
-}
-
-resource "aws_api_gateway_integration_response" "integration_responses" {
-  count       = length(local.function_config)
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.products.id
-  http_method = aws_api_gateway_method.methods[count.index].http_method
-  status_code = aws_api_gateway_method_response.method_responses[count.index].status_code
-}
-
-output "api_gateway_url" {
-  value = aws_api_gateway_rest_api.api.invoke_url
+resource "aws_lambda_function" "put_product" {
+  filename                       = "${path.module}/myzip/put_product.zip"
+  function_name                  = "put_product"
+  role                           = aws_iam_role.iam_role_product.arn
+  handler                        = "app.lambda_handler"
+  runtime                        = "python3.9"
+ # depends_on                     = [aws_iam_role_policy_attachment.policy_attach]
 }
